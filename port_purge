@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# port_purge 0.1
+#
+# This script scans the installed packages in macports and
+# uninstalls them if they do not have any dependents and
+# is not in the "world" file provided.
+#
+# syntax:
+#     $ port_purge [OPTIONS] [WORLD_FILE]
+#
+# [OPTIONS] is used when executing port uninstall 
+# [WORLD_FILE] is list of packages that should be excluded
+#
+# This code is in public domain.
+#
+# Author: Timothy Kim (timothykim@timothylive.net)
+#
+
+# First check if port is installed
+type port > /dev/null 2>&1 || echo 1>&2 "port is not installed"
+
+# Get the list of installed packages and filter
+echo "Searching for installed packages with no dependents..."
+port installed | awk '{ print "port dependents " $1 }' | exec
+
+
