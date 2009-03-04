@@ -22,6 +22,28 @@ type port > /dev/null 2>&1 || echo 1>&2 "port is not installed"
 
 # Get the list of installed packages and filter
 echo "Searching for installed packages with no dependents..."
-port installed | awk '{ print "port dependents " $1 }' | exec
+INSTALLED_PACKAGES=`port installed | awk '{ print $1 }'`
 
+declare -i COUNT
+COUNT=0
+
+for package in $INSTALLED_PACKAGES
+do
+    if [ "$package" != "The" ]; then
+        OUTPUT=`port dependents $package | grep "no dependents"`
+        if [ "$OUTPUT" != "" ]; then
+            echo "- $package"
+            COUNT=$COUNT+1
+        fi
+    fi
+done
+
+if [ $COUNT -eq 0 ]; then
+    echo "No packages found."
+    exit 0
+fi
+
+echo "Found $COUNT packages."
+
+#echo "Would you like to uninstall found packages? [n] :"
 
