@@ -1,0 +1,42 @@
+This script scans the installed packages in macports and
+uninstalls them if they do not have any dependents and
+is not in the "world" file provided.
+
+syntax:
+    $ port_purge [WORLD_FILE]
+
+TODO: [OPTIONS] is used when executing port uninstall 
+[WORLD_FILE] is list of packages that should be excluded
+
+This code is in public domain.
+
+Author: Timothy Kim (timothykim@timothylive.net)
+
+
+Example Usage:
+
+$ port_purge
+Searching for installed packages with no dependents...
+- autoconf
+- git-core
+- lame
+- wget
+Found 12 packages.
+> Would you like to uninstall found packages? (y/[n]) : n
+
+$ cat world
+git-core
+lame
+wget
+
+$ port_purge world
+- autoconf
+Found 3 packages.
+> Would you like to uninstall found packages? (y/[n]) : y
+--->  Deactivating autoconf @2.63_0
+--->  Uninstalling autoconf @2.63_0
+> Would you like to scan again? ([y]/n) : y
+Searching for installed packages with no dependents...
+No packages found.
+
+$ 

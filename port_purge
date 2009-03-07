@@ -1,5 +1,5 @@
-#!/bin/sh
-
+#!/bin/bash
+#
 # port_purge 0.1
 #
 # This script scans the installed packages in macports and
@@ -7,9 +7,9 @@
 # is not in the "world" file provided.
 #
 # syntax:
-#     $ port_purge [OPTIONS] [WORLD_FILE]
+#     $ port_purge [WORLD_FILE]
 #
-# [OPTIONS] is used when executing port uninstall 
+# TODO: [OPTIONS] is used when executing port uninstall 
 # [WORLD_FILE] is list of packages that should be excluded
 #
 # This code is in public domain.
@@ -17,33 +17,84 @@
 # Author: Timothy Kim (timothykim@timothylive.net)
 #
 
-# First check if port is installed
-type port > /dev/null 2>&1 || echo 1>&2 "port is not installed"
 
-# Get the list of installed packages and filter
-echo "Searching for installed packages with no dependents..."
-INSTALLED_PACKAGES=`port installed | awk '{ print $1 }'`
-
-declare -i COUNT
-COUNT=0
-
-for package in $INSTALLED_PACKAGES
-do
-    if [ "$package" != "The" ]; then
-        OUTPUT=`port dependents $package | grep "no dependents"`
-        if [ "$OUTPUT" != "" ]; then
-            echo "- $package"
-            COUNT=$COUNT+1
-        fi
-    fi
-done
-
-if [ $COUNT -eq 0 ]; then
-    echo "No packages found."
-    exit 0
+if [[ $# -gt 1 ]]
+then
+    echo "Usage: [WORLD_FILE]" 1>&2
+#    echo "[OPTIONS] doesn't get parsed but gets passed directly to port uninstall command" 1>&2
+    exit 128
 fi
 
-echo "Found $COUNT packages."
+use_wf=0
 
-#echo "Would you like to uninstall found packages? [n] :"
+if [[ $# -eq 1 ]]
+then
+    if [ -r $1 ]
+    then
+        world_file=$1
+        use_wf=1
+    else
+        echo "Invalid world file, continuing without a world file."
+    fi
+fi
 
+# TODO:First check if port is installed
+
+run="y"
+
+# Get the list of installed packages and filter
+while [[ "$run" =~ [Yy] ]]
+do
+    echo "Searching for installed packages with no dependents..."
+    INSTALLED_PACKAGES=`port installed | awk '{ print $1 }'`
+
+    PACKAGES=()
+    COUNT=0
+
+    for package in $INSTALLED_PACKAGES
+    do
+        if [ "$package" != "The" ]; then
+            if [ $use_wf -eq 1 ]; then
+                P=`grep "$package" $world_file`
+                if [ "$P" == "$package" ]; then
+                    continue
+                fi
+            fi
+            OUTPUT=`port dependents $package | grep "no dependents"`
+            if [ "$OUTPUT" != "" ]; then
+                echo "- $package"
+                PACKAGES[$COUNT]=$package
+                COUNT=$COUNT+1
+            fi
+        fi
+    done
+
+    if [ $COUNT -eq 0 ]; then
+        echo "No packages found."
+        exit 0
+    fi
+
+    echo "Found $COUNT packages."
+
+    echo -n "> Would you like to uninstall found packages? (y/[n]) : "
+
+    read x
+
+    if [[ "$x" =~ [^yY] ]]; then
+        exit 0
+    fi
+
+    if [[ $EUID -ne 0 ]]; then
+        echo "Error: Uninstallation must be done as root" 1>&2
+        exit 1
+    fi
+
+    for package in ${PACKAGES[@]}
+    do
+        port uninstall $package
+    done
+
+    echo -n "> Would you like to scan again? ([y]/n) : "
+
+    read run
+done
