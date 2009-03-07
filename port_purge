@@ -48,6 +48,7 @@ do
     echo "Searching for installed packages with no dependents..."
     INSTALLED_PACKAGES=`port installed | awk '{ print $1 }'`
 
+    declare -i COUNT
     PACKAGES=()
     COUNT=0
 
